@@ -1,0 +1,199 @@
+
+clc
+clear
+close all
+%% paramters setting
+global alfa c fi gama FS x1 y1 x2 y2 X Y
+
+syms X Y
+
+c=30;%;input('Enter c= ');
+fi=20;%input('Enter fi= ');
+fi=fi*pi/180;
+gama=18;%input('Enter gama= ');
+FS=1.5;%input('Enter FS= ');
+
+x1=5;%input('Enter x1= ');
+y1=0;%input('Enter y1= ');
+
+x2=15;%input('Enter x2= ');
+y2=10;%input('Enter y2= ');
+
+Y=(y2-y1)/(x2-x1)*(X-x1)+y1;
+alfa=atan((y2-y1)/(x2-x1));
+
+
+
+nvar=3;    % number of variable
+
+
+
+npop=100;         % number of population
+
+maxiter=100;      % max of iteration
+
+
+pc=0.1;                  % percent of crossover
+ncross=2*round(npop*pc/2);   % number of cross over offspring
+
+pm=1-pc;                 % percent of mutation
+nmut=round(npop*pm);     % number of mutation offsprig
+
+lb=[0 0 0]; 
+ub=[100 100 100]; 
+
+
+%% initialization
+tic
+empty.par=[];
+empty.fit=[];
+
+
+pop=repmat(empty,npop,1);
+
+
+for i=1:npop
+    s=0;
+   while s==0 
+       x=lb+rand(1,nvar).*(ub-lb);
+
+       xo=x(1);
+       yo=x(2);
+       R=x(3);
+       
+       teta1=-asin(-(yo-y1)/R);
+        teta2=-asin(-(yo-y2)/R);
+
+        teta0=teta1-teta2;
+
+        % R*sin(teta)+yo=y1
+        teta_ebteda=-asin((y1-yo)/R);
+        x_ebteda=R*cos(teta_ebteda)+xo;
+        teta_enteha=-asin((y2-yo)/R);
+        x_enteha=R*cos(teta_enteha)+xo;
+       
+       if (yo-y1)/R>=-1 && (yo-y1)/R <=1 && (yo-y2)/R>=-1 && (yo-y2)/R<=1 && x_ebteda<x1 && x_enteha>x2
+           s=1;
+       end
+   end
+   pop(i).par=x;
+   pop(i).fit=fitness(pop(i).par);
+   
+end
+
+
+
+
+%% main loop
+
+
+BEST=zeros(maxiter,1);
+MEAN=zeros(maxiter,1);
+
+for iter=1:maxiter
+
+
+   % crossover
+   
+   crosspop=repmat(empty,ncross,1);
+   crosspop=crossover(crosspop,pop,ncross);
+   
+   
+   
+   
+   % mutation
+   mutpop=repmat(empty,nmut,1);
+   mutpop=mutation(mutpop,pop,nmut,npop,lb,ub,nvar);
+   
+   
+   % merged
+  [pop]=[pop;crosspop;mutpop];
+
+
+  % select
+  [value,index]=sort([pop.fit]);
+  pop=pop(index);
+  pop=pop(1:npop);
+
+ gpop=pop(1);   % global pop
+
+
+
+ BEST(iter)=gpop.fit;
+ MEAN(iter)=mean([pop.fit]);
+
+
+
+ disp([ ' Iter = '  num2str(iter)  ' BEST = '  num2str(BEST(iter))]);
+
+
+  if iter>150 && BEST(iter)==BEST(iter-150)
+      break
+  end
+
+end
+%% results
+
+disp(' ')
+disp([ ' Best par = '  num2str(gpop.par)])
+disp([ ' Best fitness = '  num2str(gpop.fit)])
+disp([ ' Time = '  num2str(toc)])
+
+x=gpop.par;
+
+xo=x(1);
+yo=x(2);
+
+R=x(3);
+
+teta1=-asin((yo-y1)/R);
+teta2=-asin((yo-y2)/R);
+
+teta0=teta1-teta2;
+
+% R*sin(teta)+yo=y1
+teta_ebteda=-asin((y1-yo)/R);
+x_ebteda=R*cos(teta_ebteda)+xo;
+teta_enteha=-asin((y2-yo)/R);
+x_enteha=R*cos(teta_enteha)+xo;
+
+if x_ebteda<x1 && x_enteha>x2
+    xx1=x1:(x2-x1)/5:x2;
+    t=teta2:(teta1-teta2)/10:teta1;
+    xx2=R*cos(t)+xo;
+    yy1=eval(subs(Y,X,xx1));
+    yy2=R*sin(t)+yo;
+    xxx=[x_ebteda xx1 x_enteha xx2]; 
+    yyy=[y1 yy1 y2 yy2];
+end
+
+figure(1)
+plot(xxx,yyy)
+line([x_ebteda xo],[y1 yo],'LineStyle','-')
+line([x_enteha xo],[y2 yo],'LineStyle','-')
+
+figure(2)
+plot(BEST(1:iter),'r','LineWidth',2)
+hold on
+plot(MEAN(1:iter),'b','LineWidth',2)
+
+
+xlabel('Iteration')
+ylabel(' Fitness')
+
+legend('BEST','MEAN')
+
+
+title('GA for TSP')
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%                                                                   %
+%                          www.matlabnet.ir                         %
+%                   Free Download  matlab code and movie            %
+%                          Shahab Poursafary                        %
+%                                                                   %
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
